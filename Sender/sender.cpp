@@ -25,22 +25,20 @@ int main(int argc, char *argv[])
 	HANDLE hMutex;
 	HANDLE hWaited[2];
 
-	hMutex = OpenMutex(SYNCHRONIZE, FALSE, "ReceiverMutex");
-
-	WaitForSingleObject(hMutex, INFINITE);
+	hMutex = OpenMutex(SYNCHRONIZE, TRUE, "ReceiverMutex");
 
 	printf("%s", "¬ведите своЄ им€(не более 20 символов): ");
 	scanf("%s", name);
 
-	ReleaseMutex(hMutex);
-
-	do 
+	while (true)
 	{
-		WaitForSingleObject(hMutex, INFINITE);
-		printf("%s", "¬ведите код комманды(0 - выход; 1 - запись): ");
+		printf("%s: %s", name, "¬ведите код комманды(0 - выход; 1 - запись): ");
 		scanf("%d", &command);
+		WaitForSingleObject(hMutex, INFINITE);
 		if (command == 1)
 		{
+			printf("%s: %s", name, "¬ведите текст сообщени€(не более 20 символов): ");
+			scanf("%s", text);
 			isFree = false;
 			fin = fileCreateIn(argv[1]);
 			fin >> messageNum;
@@ -54,7 +52,7 @@ int main(int argc, char *argv[])
 				}
 			}
 			fin.close();
-			while (!isFree)
+			if (!isFree)
 			{
 				hReadedEvent = CreateEvent(NULL, NULL, FALSE, "ReadedEvent");
 				hWaited[0] = hMutex;
@@ -66,16 +64,10 @@ int main(int argc, char *argv[])
 				for (int i = 0; i < messageNum; i++)
 				{
 					fin.read((char*)&messages[i], sizeof(Message));
-					if (messages[i].free)
-					{
-						isFree = true;
-					}
 				}
 				fin.close();
 				CloseHandle(hReadedEvent);
 			}
-			printf("%s: %s", name, "¬ведите текст сообщени€(не более 20 символов): ");
-			scanf("%s", text);
 			for (int i = 0; i < messageNum; i++)
 			{
 				if (messages[i].free)
@@ -103,7 +95,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 		ReleaseMutex(hMutex);
-	} while (command == 1);
+	}
 
 	CloseHandle(hMutex);
 
